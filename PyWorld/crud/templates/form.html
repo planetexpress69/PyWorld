@@ -1,0 +1,13 @@
+<h1>{{ headline }} </h1>
+{% if message %}
+   <b>{{ message }}</b>
+{% endif %}
+
+<form action='/{{ action }}/' method='post'>
+    {% csrf_token %}
+    <input name="first_name" value="{{ user.first_name }}"><br />
+    <input name="last_name" value="{{ user.last_name }}"><br />
+    <input type="submit" value="{{ button }}">
+</form>
+
+<a href="/">Index</a>

@@ -1,0 +1,18 @@
+<h1>Users</h1>
+{% if message %}
+    <b>{{ message }}</b>
+{% endif %}
+
+{% if user_list %}
+    <ul>
+        {% for user in user_list %}
+            <li>
+                {{ user.full_name }} <a href="/edit/{{ user.id }}">Edit</a> | <a href="/delete/{{ user.id }}">Delete</a>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No users found.</p>
+{% endif %}
+
+<a href="/new/">Add new User</a>
