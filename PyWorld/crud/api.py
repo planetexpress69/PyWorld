@@ -4,11 +4,18 @@ from tastypie.authentication import BasicAuthentication,Authentication
 from tastypie.authorization import DjangoAuthorization, Authorization
 from tastypie.exceptions import BadRequest
 from django.db import models, IntegrityError
-from tastypie.models import create_api_key
+from tastypie.models import create_api_key, ApiKey
 from tastypie.resources import ModelResource, ALL
 from models import Person
+import logging
 
+logging.basicConfig()
+logger = logging.getLogger('foo')
+
+
+#user create resource
 class CreateUserResource(ModelResource):
+    
     class Meta:
         resource_name = 'user'
         allowed_methods = ['post']
@@ -17,38 +24,27 @@ class CreateUserResource(ModelResource):
         authorization = Authorization()
         include_resource_uri = False
         fields = ['username']
-        
+        models.signals.post_save.connect(create_api_key, sender=User)        
 
     def obj_create(self, bundle, request=None, **kwargs):
         try:
             bundle = super(CreateUserResource, self).obj_create(bundle, request, **kwargs)
             bundle.obj.set_password(bundle.data.get('password'))
             bundle.obj.save() 
-            user = User.objects.get(id=bundle.obj.id)
-            group = Group.objects.get(id=1)
-            user.groups.add(group)
+            # make user a member of group 'members'
+            group = Group.objects.get(name='members')
+            bundle.obj.groups.add(group)
+            
+            #by the way: this is how to fetch the apikey
+            apikey = ApiKey.objects.get(user=bundle.obj)
+            
         except IntegrityError:
             raise BadRequest('That username already exists')
         return bundle
-    
-    
-    
-    
-    '''g = Group.objects.get(name='groupname') 
-g.user_set.add(your_user)'''
 
-'''
-class UserResource(ModelResource):
-    class Meta:
-        queryset = User.objects.all()
-        resource_name = 'user'
-        excludes = ['email', 'password', 'is_active', 'is_staff', 'is_superuser']
-        list_allowed_methods = ['get', 'post', 'put']
-        allowed_methods = ['get', 'post', 'put']
-        detail_allowed_methods = ['get', 'post', 'put', 'delete']
-        '''
-        
+#record entity    
 class PersonResource(ModelResource):
+    
     class Meta:
         queryset = Person.objects.all()
         resource_name = 'persons'
@@ -56,7 +52,7 @@ class PersonResource(ModelResource):
         detail_allowed_methods = ['get', 'post', 'put', 'delete']
         authentication = BasicAuthentication()
         authorization = DjangoAuthorization()
-        models.signals.post_save.connect(create_api_key, sender=User)
+        
         filtering = {
             'first_name' : ALL,
             'last_name' : ALL,
