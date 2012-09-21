@@ -12,7 +12,6 @@ import logging
 logging.basicConfig()
 logger = logging.getLogger('foo')
 
-
 #user create resource
 class CreateUserResource(ModelResource):
     
@@ -28,15 +27,18 @@ class CreateUserResource(ModelResource):
 
     def obj_create(self, bundle, request=None, **kwargs):
         try:
+            #persist user
             bundle = super(CreateUserResource, self).obj_create(bundle, request, **kwargs)
             bundle.obj.set_password(bundle.data.get('password'))
             bundle.obj.save() 
+            
             # make user a member of group 'members'
             group = Group.objects.get(name='members')
             bundle.obj.groups.add(group)
             
             #by the way: this is how to fetch the apikey
             apikey = ApiKey.objects.get(user=bundle.obj)
+            logger.error(apikey)
             
         except IntegrityError:
             raise BadRequest('That username already exists')
@@ -57,4 +59,5 @@ class PersonResource(ModelResource):
             'first_name' : ALL,
             'last_name' : ALL,
         }
+        
         ordering = ['first_name', 'last_name', 'created', 'modified']
